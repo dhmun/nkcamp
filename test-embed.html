@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp Iframe 임베딩 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .test-container h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007cba;
+            padding-bottom: 10px;
+        }
+
+        .test-container p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        iframe {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .embed-code {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        .responsive-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 50%; /* 2:1 비율 */
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .responsive-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏢 NK Camp Interactive Chart - Iframe 임베딩 테스트</h1>
+
+    <div class="test-container">
+        <h2>1. 기본 라이트 테마</h2>
+        <p>기본 설정으로 밝은 테마를 사용한 차트입니다.</p>
+        
+        <iframe 
+            src="./embed.html"
+            width="100%" 
+            height="600px"
+            frameborder="0">
+        </iframe>
+
+        <div class="embed-code">
+&lt;iframe src="./embed.html" width="100%" height="600px" frameborder="0"&gt;&lt;/iframe&gt;
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>2. 다크 테마</h2>
+        <p>어두운 테마로 설정된 차트입니다.</p>
+        
+        <iframe 
+            src="./embed.html?theme=dark"
+            width="100%" 
+            height="600px"
+            frameborder="0">
+        </iframe>
+
+        <div class="embed-code">
+&lt;iframe src="./embed.html?theme=dark" width="100%" height="600px" frameborder="0"&gt;&lt;/iframe&gt;
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>3. 컨트롤 없는 버전</h2>
+        <p>캠프 선택 컨트롤을 숨긴 버전입니다.</p>
+        
+        <iframe 
+            src="./embed.html?controls=false&height=500px"
+            width="100%" 
+            height="500px"
+            frameborder="0">
+        </iframe>
+
+        <div class="embed-code">
+&lt;iframe src="./embed.html?controls=false&height=500px" width="100%" height="500px" frameborder="0"&gt;&lt;/iframe&gt;
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>4. 반응형 임베딩</h2>
+        <p>CSS를 이용한 반응형 iframe 구현입니다.</p>
+        
+        <div class="responsive-container">
+            <iframe 
+                src="./embed.html?theme=light&width=100%&height=400px"
+                frameborder="0">
+            </iframe>
+        </div>
+
+        <div class="embed-code">
+&lt;div class="responsive-container"&gt;<br>
+&nbsp;&nbsp;&lt;iframe src="./embed.html" frameborder="0"&gt;&lt;/iframe&gt;<br>
+&lt;/div&gt;<br><br>
+
+&lt;style&gt;<br>
+.responsive-container {<br>
+&nbsp;&nbsp;position: relative;<br>
+&nbsp;&nbsp;width: 100%;<br>
+&nbsp;&nbsp;height: 0;<br>
+&nbsp;&nbsp;padding-bottom: 50%;<br>
+&nbsp;&nbsp;overflow: hidden;<br>
+}<br>
+.responsive-container iframe {<br>
+&nbsp;&nbsp;position: absolute;<br>
+&nbsp;&nbsp;top: 0;<br>
+&nbsp;&nbsp;left: 0;<br>
+&nbsp;&nbsp;width: 100%;<br>
+&nbsp;&nbsp;height: 100%;<br>
+}<br>
+&lt;/style&gt;
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>5. 작은 사이즈 (사이드바용)</h2>
+        <p>사이드바나 작은 공간에 사용할 수 있는 축소 버전입니다.</p>
+        
+        <iframe 
+            src="./embed.html?theme=light&width=400px&height=350px&controls=true"
+            width="400px" 
+            height="350px"
+            frameborder="0"
+            style="margin: 0 auto; display: block;">
+        </iframe>
+
+        <div class="embed-code">
+&lt;iframe src="./embed.html?width=400px&height=350px" width="400px" height="350px" frameborder="0"&gt;&lt;/iframe&gt;
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 배포 가이드</h2>
+        <ol>
+            <li><strong>GitHub Pages 배포:</strong> embed.html 파일을 GitHub 저장소에 업로드하고 Pages를 활성화하세요.</li>
+            <li><strong>URL 변경:</strong> 위의 모든 예시에서 <code>./embed.html</code>을 실제 GitHub Pages URL로 변경하세요.</li>
+            <li><strong>예시:</strong> <code>https://username.github.io/repository-name/embed.html</code></li>
+            <li><strong>테스트:</strong> 다양한 파라미터 조합을 테스트해보세요.</li>
+        </ol>
+
+        <h3>🔧 URL 파라미터 옵션</h3>
+        <ul>
+            <li><code>theme</code>: light (기본값) 또는 dark</li>
+            <li><code>width</code>: CSS 단위 (예: 100%, 800px)</li>
+            <li><code>height</code>: CSS 단위 (예: 600px, 50vh)</li>
+            <li><code>controls</code>: true (기본값) 또는 false</li>
+        </ul>
+    </div>
+
+    <script>
+        // iframe 리사이즈 메시지 리스너 (동적 높이 조정)
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'resize') {
+                console.log('Iframe resize message received:', e.data.height);
+                // 실제 구현에서는 특정 iframe의 높이를 조정할 수 있습니다
+            }
+        });
+    </script>
+</body>
+</html>

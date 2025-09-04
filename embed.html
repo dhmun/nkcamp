@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp Interactive - Embeddable</title>
+    
+    <!-- 임베딩을 위한 CSS Reset -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #root {
+            width: 100%;
+            height: 100vh;
+            background: transparent;
+        }
+        
+        /* iframe 내부에서의 스타일 조정 */
+        .nk-camp-embed {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
+        }
+        
+        /* 외부 사이트에서 임베딩될 때의 반응형 */
+        @media (max-width: 768px) {
+            .nk-camp-embed {
+                padding: 10px;
+            }
+        }
+        
+        /* 로딩 상태 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">NK Camp 차트 로딩 중...</div>
+    </div>
+
+    <!-- React 및 라이브러리 CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
+
+    <!-- 임베딩용 NK Camp 컴포넌트 -->
+    <script>
+        // URL 파라미터 파싱
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') || 'light';
+        const showControls = urlParams.get('controls') !== 'false';
+        const height = urlParams.get('height') || '600px';
+        const width = urlParams.get('width') || '100%';
+        
+        // 샘플 데이터 (실제로는 API에서 가져올 수 있음)
+        const campData = [
+            {
+                date: '2020-03',
+                camp_14: 15000,
+                camp_15: 10000,
+                camp_16: 8000,
+                camp_18: 12000,
+                camp_22: 6000,
+                camp_25: 5000
+            },
+            {
+                date: '2020-06',
+                camp_14: 15200,
+                camp_15: 10100,
+                camp_16: 8100,
+                camp_18: 12200,
+                camp_22: 6100,
+                camp_25: 5050
+            },
+            {
+                date: '2020-09',
+                camp_14: 15100,
+                camp_15: 10050,
+                camp_16: 8050,
+                camp_18: 12100,
+                camp_22: 6050,
+                camp_25: 5025
+            },
+            {
+                date: '2020-12',
+                camp_14: 15300,
+                camp_15: 10200,
+                camp_16: 8200,
+                camp_18: 12300,
+                camp_22: 6150,
+                camp_25: 5100
+            },
+            {
+                date: '2021-03',
+                camp_14: 15400,
+                camp_15: 10250,
+                camp_16: 8150,
+                camp_18: 12250,
+                camp_22: 6100,
+                camp_25: 5075
+            },
+            {
+                date: '2021-06',
+                camp_14: 15350,
+                camp_15: 10300,
+                camp_16: 8100,
+                camp_18: 12400,
+                camp_22: 6200,
+                camp_25: 5150
+            }
+        ];
+        
+        // 임베딩용 NK Camp 컴포넌트
+        const NKCampEmbeddable = ({ data, theme, showControls, width, height }) => {
+            const [selectedCamps, setSelectedCamps] = React.useState({
+                camp_14: true,
+                camp_15: true,
+                camp_16: true,
+                camp_18: true,
+                camp_22: true,
+                camp_25: true
+            });
+            
+            const [showGrid, setShowGrid] = React.useState(true);
+            const [normalizedMode, setNormalizedMode] = React.useState(false);
+            
+            const campInfo = {
+                camp_14: { name: '개천 관리소 (14호)', color: '#E69F00' },
+                camp_15: { name: '요덕 관리소 (15호)', color: '#56B4E9' },
+                camp_16: { name: '화성 관리소 (16호)', color: '#009E73' },
+                camp_18: { name: '북창 관리소 (18호)', color: '#F0E442' },
+                camp_22: { name: '회령 관리소 (22호)', color: '#0072B2' },
+                camp_25: { name: '청진 관리소 (25호)', color: '#D55E00' }
+            };
+            
+            const processedData = React.useMemo(() => {
+                if (!data || !Array.isArray(data)) return [];
+                
+                return data.map(item => {
+                    const processed = { ...item };
+                    
+                    if (normalizedMode && data[0]) {
+                        Object.keys(campInfo).forEach(camp => {
+                            if (processed[camp] && data[0][camp]) {
+                                processed[camp] = Math.round((processed[camp] / data[0][camp]) * 100);
+                            }
+                        });
+                    }
+                    
+                    return processed;
+                });
+            }, [data, normalizedMode]);
+            
+            const toggleCamp = (campKey) => {
+                setSelectedCamps(prev => ({
+                    ...prev,
+                    [campKey]: !prev[campKey]
+                }));
+            };
+            
+            return React.createElement('div', {
+                className: 'nk-camp-embed',
+                style: { 
+                    width, 
+                    height,
+                    backgroundColor: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+                    color: theme === 'dark' ? '#ffffff' : '#333333',
+                    padding: '15px'
+                }
+            }, [
+                // 제목
+                React.createElement('h3', {
+                    key: 'title',
+                    style: { 
+                        textAlign: 'center',
+                        fontSize: '18px',
+                        marginBottom: showControls ? '15px' : '10px',
+                        fontWeight: '600'
+                    }
+                }, '북한 주요 관리소 수감 인원 추정치'),
+                
+                // 컨트롤 패널 (옵션)
+                showControls && React.createElement('div', {
+                    key: 'controls',
+                    style: { 
+                        marginBottom: '15px',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        fontSize: '12px',
+                        alignItems: 'center'
+                    }
+                }, [
+                    ...Object.entries(campInfo).map(([key, info]) => 
+                        React.createElement('button', {
+                            key: key,
+                            onClick: () => toggleCamp(key),
+                            style: {
+                                padding: '6px 10px',
+                                border: 'none',
+                                borderRadius: '3px',
+                                backgroundColor: selectedCamps[key] ? info.color : '#e0e0e0',
+                                color: selectedCamps[key] ? 'white' : '#666',
+                                cursor: 'pointer',
+                                fontSize: '11px',
+                                fontWeight: '500'
+                            }
+                        }, info.name.replace(' 관리소', ''))
+                    ),
+                    
+                    React.createElement('label', {
+                        key: 'normalize',
+                        style: { fontSize: '11px', marginLeft: '10px', cursor: 'pointer' }
+                    }, [
+                        React.createElement('input', {
+                            key: 'normalize-input',
+                            type: 'checkbox',
+                            checked: normalizedMode,
+                            onChange: (e) => setNormalizedMode(e.target.checked),
+                            style: { marginRight: '4px' }
+                        }),
+                        '정규화'
+                    ])
+                ]),
+                
+                // 차트
+                React.createElement('div', {
+                    key: 'chart',
+                    style: { 
+                        height: showControls ? 'calc(100% - 80px)' : 'calc(100% - 50px)',
+                        minHeight: '300px'
+                    }
+                }, 
+                    React.createElement(Recharts.ResponsiveContainer, {
+                        width: '100%',
+                        height: '100%'
+                    }, 
+                        React.createElement(Recharts.LineChart, {
+                            data: processedData,
+                            margin: { top: 10, right: 10, left: 10, bottom: 20 }
+                        }, [
+                            React.createElement(Recharts.CartesianGrid, {
+                                key: 'grid',
+                                strokeDasharray: showGrid ? '3 3' : 'none',
+                                stroke: theme === 'dark' ? '#333' : '#ccc'
+                            }),
+                            React.createElement(Recharts.XAxis, {
+                                key: 'xaxis',
+                                dataKey: 'date',
+                                fontSize: 11,
+                                stroke: theme === 'dark' ? '#ffffff' : '#333333'
+                            }),
+                            React.createElement(Recharts.YAxis, {
+                                key: 'yaxis',
+                                fontSize: 11,
+                                stroke: theme === 'dark' ? '#ffffff' : '#333333'
+                            }),
+                            React.createElement(Recharts.Tooltip, {
+                                key: 'tooltip',
+                                contentStyle: {
+                                    backgroundColor: theme === 'dark' ? '#333' : '#fff',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    fontSize: '12px'
+                                }
+                            }),
+                            
+                            ...Object.entries(campInfo)
+                                .filter(([key]) => selectedCamps[key])
+                                .map(([key, info]) => 
+                                    React.createElement(Recharts.Line, {
+                                        key: key,
+                                        type: 'monotone',
+                                        dataKey: key,
+                                        stroke: info.color,
+                                        strokeWidth: 2,
+                                        dot: { r: 3 },
+                                        connectNulls: false
+                                    })
+                                )
+                        ])
+                    )
+                )
+            ]);
+        };
+        
+        // 컴포넌트 렌더링
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('root');
+            
+            const props = {
+                data: campData,
+                theme: theme,
+                showControls: showControls,
+                width: width,
+                height: height
+            };
+            
+            const root = ReactDOM.createRoot(container);
+            root.render(React.createElement(NKCampEmbeddable, props));
+        });
+        
+        // iframe 리사이즈 이벤트 (부모 창에 알림)
+        window.addEventListener('load', function() {
+            if (window.parent !== window) {
+                const height = document.body.scrollHeight;
+                window.parent.postMessage({
+                    type: 'resize',
+                    height: height
+                }, '*');
+            }
+        });
+    </script>
+</body>
+</html>
