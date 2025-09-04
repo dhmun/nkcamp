@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>라인 차트: 북한 관리소 인구 추세 (2020-2025)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 90vw;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="population-line-chart-ko"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('population-line-chart-ko').getContext('2d');
+
+        const chartData = {
+            labels: ['2020년', '2021년', '2022년', '2023년', '2024년', '2025년'],
+            datasets: [{
+                label: '총 인구',
+                data: [209000, 211400, 205800, 198900, 189800, 192700],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: true,
+                tension: 0.1
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '북한 관리소 인구 추세 (2020-2025)',
+                        font: {
+                            size: 18
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('ko-KR').format(context.parsed.y) + ' 명';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '인구 수'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('ko-KR', { notation: 'compact', compactDisplay: 'short' }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                       title: {
+                           display: true,
+                           text: '연도'
+                       }
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>

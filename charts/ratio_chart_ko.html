@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도넛 차트: 북한 관리소 인구 비율 (2025)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 90vw;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="population-ratio-chart-ko"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('population-ratio-chart-ko').getContext('2d');
+
+        const chartData = {
+            labels: [
+                '14호 관리소 (평안남도)',
+                '15호 관리소 (함경북도)',
+                '16호 관리소 (함경북도)',
+                '17호 관리소 (평안남도)',
+                '18호 관리소 (평안남도)',
+                '25호 관리소 (함경남도)'
+            ],
+            datasets: [{
+                label: '2025년 인구 비율',
+                data: [39700, 33600, 24100, 39200, 24200, 31900],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)'
+                ],
+                hoverOffset: 4
+            }]
+        };
+
+        const config = {
+            type: 'doughnut',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '북한 관리소 인구 비율 (2025)',
+                        font: {
+                            size: 18
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('ko-KR').format(context.parsed) + ' 명';
+                                }
+                                return label;
+                            },
+                            footer: function(tooltipItems) {
+                                const total = tooltipItems.reduce((sum, item) => sum + item.parsed, 0);
+                                const percentage = (tooltipItems[0].parsed / total * 100).toFixed(2) + '%';
+                                return '비율: ' + percentage;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>
