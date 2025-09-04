@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp Charts - 차트 선택기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+        
+        .chart-preview {
+            height: 200px;
+            background: linear-gradient(45deg, #f0f2f5 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f2f5 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f2f5 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f2f5 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .chart-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+        
+        .chart-info {
+            padding: 20px;
+        }
+        
+        .chart-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .chart-info p {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .chart-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .option-tag {
+            background: #e8f4fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .embed-code {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #495057;
+            word-break: break-all;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .embed-code:hover {
+            background: #e9ecef;
+            border-color: #dee2e6;
+        }
+        
+        .embed-code::before {
+            content: "📋 클릭하여 복사";
+            display: block;
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .demo-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .demo-iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-iframe {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 NK Camp Interactive Charts</h1>
+            <p>다양한 북한 정치범수용소 데이터 시각화 차트를 iframe으로 임베딩하세요</p>
+        </div>
+        
+        <div class="charts-grid">
+            <!-- 라인 차트 -->
+            <div class="chart-card" onclick="loadDemo('line-chart.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">📈</div>
+                </div>
+                <div class="chart-info">
+                    <h3>라인 차트 (Line Chart)</h3>
+                    <p>시간에 따른 수감 인원 추이를 보여주는 기본 라인 차트입니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">테마 변경</span>
+                        <span class="option-tag">캠프 선택</span>
+                        <span class="option-tag">정규화</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/line-chart.html" width="100%" height="600px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 바 차트 -->
+            <div class="chart-card" onclick="loadDemo('bar-chart.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">📊</div>
+                </div>
+                <div class="chart-info">
+                    <h3>바 차트 (Bar Chart)</h3>
+                    <p>특정 시점의 각 캠프별 수감 인원을 비교할 수 있는 바 차트입니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">시점 선택</span>
+                        <span class="option-tag">정렬</span>
+                        <span class="option-tag">애니메이션</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/bar-chart.html" width="100%" height="500px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 파이 차트 -->
+            <div class="chart-card" onclick="loadDemo('pie-chart.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">🍰</div>
+                </div>
+                <div class="chart-info">
+                    <h3>파이 차트 (Pie Chart)</h3>
+                    <p>전체 대비 각 캠프의 수감 인원 비율을 원형으로 표시합니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">3D 효과</span>
+                        <span class="option-tag">도넛형</span>
+                        <span class="option-tag">레이블</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/pie-chart.html" width="100%" height="500px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 영역 차트 -->
+            <div class="chart-card" onclick="loadDemo('area-chart.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">🏔️</div>
+                </div>
+                <div class="chart-info">
+                    <h3>영역 차트 (Area Chart)</h3>
+                    <p>누적된 데이터와 전체 트렌드를 함께 보여주는 영역 차트입니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">스택형</span>
+                        <span class="option-tag">그라데이션</span>
+                        <span class="option-tag">투명도</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/area-chart.html" width="100%" height="600px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 대시보드 -->
+            <div class="chart-card" onclick="loadDemo('dashboard.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">📋</div>
+                </div>
+                <div class="chart-info">
+                    <h3>종합 대시보드</h3>
+                    <p>여러 차트를 조합한 종합적인 데이터 대시보드입니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">다중 차트</span>
+                        <span class="option-tag">필터링</span>
+                        <span class="option-tag">반응형</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/dashboard.html" width="100%" height="800px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 지도 차트 -->
+            <div class="chart-card" onclick="loadDemo('map-chart.html')">
+                <div class="chart-preview">
+                    <div class="chart-icon">🗺️</div>
+                </div>
+                <div class="chart-info">
+                    <h3>지도 차트 (Map Chart)</h3>
+                    <p>북한 지도 위에 각 관리소의 위치와 규모를 시각화합니다.</p>
+                    <div class="chart-options">
+                        <span class="option-tag">지도 레이어</span>
+                        <span class="option-tag">마커</span>
+                        <span class="option-tag">줌 기능</span>
+                    </div>
+                    <div class="embed-code" onclick="event.stopPropagation(); copyToClipboard(this)">
+&lt;iframe src="https://yourusername.github.io/nkcamp/charts/map-chart.html" width="100%" height="600px" frameborder="0"&gt;&lt;/iframe&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🔍 차트 미리보기</h2>
+            <iframe id="demo-iframe" class="demo-iframe" src="../embed-fixed.html" frameborder="0"></iframe>
+            <p style="text-align: center; margin-top: 15px; color: #666; font-size: 0.9rem;">
+                위의 차트를 클릭하면 미리보기가 변경됩니다.
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function loadDemo(chartFile) {
+            const iframe = document.getElementById('demo-iframe');
+            // 로컬 테스트용 - 실제로는 GitHub Pages URL 사용
+            iframe.src = chartFile.replace('.html', '.html') || '../embed-fixed.html';
+        }
+        
+        function copyToClipboard(element) {
+            const text = element.textContent.replace('📋 클릭하여 복사\n', '');
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const original = element.innerHTML;
+                element.innerHTML = element.innerHTML.replace('📋 클릭하여 복사', '✅ 복사됨!');
+                element.style.background = '#d4edda';
+                element.style.borderColor = '#c3e6cb';
+                element.style.color = '#155724';
+                
+                setTimeout(() => {
+                    element.innerHTML = original;
+                    element.style.background = '';
+                    element.style.borderColor = '';
+                    element.style.color = '';
+                }, 2000);
+            }).catch(() => {
+                alert('클립보드 복사에 실패했습니다.');
+            });
+        }
+        
+        // 초기 데모 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDemo('line-chart.html');
+        });
+    </script>
+</body>
+</html>

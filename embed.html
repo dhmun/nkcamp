@@ -78,6 +78,7 @@
     <!-- React 및 라이브러리 CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
 
     <!-- 임베딩용 NK Camp 컴포넌트 -->
@@ -268,73 +269,113 @@
                         minHeight: '300px'
                     }
                 }, 
-                    React.createElement(Recharts.ResponsiveContainer, {
-                        width: '100%',
-                        height: '100%'
-                    }, 
-                        React.createElement(Recharts.LineChart, {
-                            data: processedData,
-                            margin: { top: 10, right: 10, left: 10, bottom: 20 }
-                        }, [
-                            React.createElement(Recharts.CartesianGrid, {
-                                key: 'grid',
-                                strokeDasharray: showGrid ? '3 3' : 'none',
-                                stroke: theme === 'dark' ? '#333' : '#ccc'
-                            }),
-                            React.createElement(Recharts.XAxis, {
-                                key: 'xaxis',
-                                dataKey: 'date',
-                                fontSize: 11,
-                                stroke: theme === 'dark' ? '#ffffff' : '#333333'
-                            }),
-                            React.createElement(Recharts.YAxis, {
-                                key: 'yaxis',
-                                fontSize: 11,
-                                stroke: theme === 'dark' ? '#ffffff' : '#333333'
-                            }),
-                            React.createElement(Recharts.Tooltip, {
-                                key: 'tooltip',
-                                contentStyle: {
-                                    backgroundColor: theme === 'dark' ? '#333' : '#fff',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    fontSize: '12px'
-                                }
-                            }),
-                            
-                            ...Object.entries(campInfo)
-                                .filter(([key]) => selectedCamps[key])
-                                .map(([key, info]) => 
-                                    React.createElement(Recharts.Line, {
-                                        key: key,
-                                        type: 'monotone',
-                                        dataKey: key,
-                                        stroke: info.color,
-                                        strokeWidth: 2,
-                                        dot: { r: 3 },
-                                        connectNulls: false
-                                    })
-                                )
-                        ])
-                    )
+                    typeof window.Recharts !== 'undefined' ? 
+                        React.createElement(window.Recharts.ResponsiveContainer, {
+                            width: '100%',
+                            height: '100%'
+                        }, 
+                            React.createElement(window.Recharts.LineChart, {
+                                data: processedData,
+                                margin: { top: 10, right: 10, left: 10, bottom: 20 }
+                            }, [
+                                React.createElement(window.Recharts.CartesianGrid, {
+                                    key: 'grid',
+                                    strokeDasharray: showGrid ? '3 3' : 'none',
+                                    stroke: theme === 'dark' ? '#333' : '#ccc'
+                                }),
+                                React.createElement(window.Recharts.XAxis, {
+                                    key: 'xaxis',
+                                    dataKey: 'date',
+                                    fontSize: 11,
+                                    stroke: theme === 'dark' ? '#ffffff' : '#333333'
+                                }),
+                                React.createElement(window.Recharts.YAxis, {
+                                    key: 'yaxis',
+                                    fontSize: 11,
+                                    stroke: theme === 'dark' ? '#ffffff' : '#333333'
+                                }),
+                                React.createElement(window.Recharts.Tooltip, {
+                                    key: 'tooltip',
+                                    contentStyle: {
+                                        backgroundColor: theme === 'dark' ? '#333' : '#fff',
+                                        border: '1px solid #ccc',
+                                        borderRadius: '4px',
+                                        fontSize: '12px'
+                                    }
+                                }),
+                                
+                                ...Object.entries(campInfo)
+                                    .filter(([key]) => selectedCamps[key])
+                                    .map(([key, info]) => 
+                                        React.createElement(window.Recharts.Line, {
+                                            key: key,
+                                            type: 'monotone',
+                                            dataKey: key,
+                                            stroke: info.color,
+                                            strokeWidth: 2,
+                                            dot: { r: 3 },
+                                            connectNulls: false
+                                        })
+                                    )
+                            ])
+                        ) :
+                        React.createElement('div', {
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                                color: theme === 'dark' ? '#ffffff' : '#333333',
+                                fontSize: '16px'
+                            }
+                        }, '📊 차트 라이브러리 로딩 중...')
                 )
             ]);
         };
         
-        // 컴포넌트 렌더링
-        document.addEventListener('DOMContentLoaded', function() {
+        // 컴포넌트 렌더링 - 라이브러리 로딩을 확인하고 렌더링
+        function renderComponent() {
             const container = document.getElementById('root');
             
-            const props = {
-                data: campData,
-                theme: theme,
-                showControls: showControls,
-                width: width,
-                height: height
-            };
+            // React와 ReactDOM이 로딩되었는지 확인
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                container.innerHTML = '<div class="loading">React 라이브러리 로딩 중...</div>';
+                setTimeout(renderComponent, 100);
+                return;
+            }
             
-            const root = ReactDOM.createRoot(container);
-            root.render(React.createElement(NKCampEmbeddable, props));
+            // Recharts가 로딩되었는지 확인
+            if (typeof window.Recharts === 'undefined') {
+                container.innerHTML = '<div class="loading">Recharts 라이브러리 로딩 중...</div>';
+                setTimeout(renderComponent, 100);
+                return;
+            }
+            
+            try {
+                const props = {
+                    data: campData,
+                    theme: theme,
+                    showControls: showControls,
+                    width: width,
+                    height: height
+                };
+                
+                const root = ReactDOM.createRoot(container);
+                root.render(React.createElement(NKCampEmbeddable, props));
+                
+                console.log('NK Camp 차트 렌더링 완료');
+            } catch (error) {
+                console.error('렌더링 에러:', error);
+                container.innerHTML = '<div style="padding: 20px; color: red;">렌더링 에러: ' + error.message + '</div>';
+            }
+        }
+        
+        // 페이지 로딩 완료 시 컴포넌트 렌더링 시도
+        document.addEventListener('DOMContentLoaded', renderComponent);
+        
+        // 윈도우 로딩 완료 시에도 시도 (CDN 로딩 지연 대비)
+        window.addEventListener('load', function() {
+            setTimeout(renderComponent, 500);
         });
         
         // iframe 리사이즈 이벤트 (부모 창에 알림)

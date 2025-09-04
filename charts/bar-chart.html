@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp - Bar Chart</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        #root { width: 100%; height: 100vh; padding: 20px; }
+        
+        .container {
+            width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color);
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+        }
+        
+        .light-theme { --bg-color: #ffffff; --text-color: #333333; --border-color: #e0e0e0; --button-bg: #f5f5f5; --button-text: #666; }
+        .dark-theme { --bg-color: #1a1a1a; --text-color: #ffffff; --border-color: #333333; --button-bg: #333333; --button-text: #cccccc; }
+        
+        .title { text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        
+        .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
+        
+        .control-group { display: flex; align-items: center; margin-right: 20px; }
+        .control-group label { font-size: 12px; margin-right: 8px; }
+        .control-group select { padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); }
+        
+        .camp-button {
+            padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer;
+            font-size: 11px; font-weight: 500; transition: all 0.2s ease;
+        }
+        .camp-button:hover { opacity: 0.8; transform: translateY(-1px); }
+        
+        .chart-container { flex: 1; position: relative; min-height: 300px; }
+        
+        .loading { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 16px; }
+        .loading::after {
+            content: ''; width: 20px; height: 20px; margin-left: 10px; border: 2px solid #f3f3f3;
+            border-top: 2px solid #007cba; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"><div class="loading">NK Camp 바 차트 로딩 중...</div></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') || 'light';
+        const showControls = urlParams.get('controls') !== 'false';
+        const height = urlParams.get('height') || '500px';
+        const width = urlParams.get('width') || '100%';
+        
+        const campData = [
+            { date: '2020-03', camp_14: 15000, camp_15: 10000, camp_16: 8000, camp_18: 12000, camp_22: 6000, camp_25: 5000 },
+            { date: '2020-06', camp_14: 15200, camp_15: 10100, camp_16: 8100, camp_18: 12200, camp_22: 6100, camp_25: 5050 },
+            { date: '2020-09', camp_14: 15100, camp_15: 10050, camp_16: 8050, camp_18: 12100, camp_22: 6050, camp_25: 5025 },
+            { date: '2020-12', camp_14: 15300, camp_15: 10200, camp_16: 8200, camp_18: 12300, camp_22: 6150, camp_25: 5100 },
+            { date: '2021-03', camp_14: 15400, camp_15: 10250, camp_16: 8150, camp_18: 12250, camp_22: 6100, camp_25: 5075 },
+            { date: '2021-06', camp_14: 15350, camp_15: 10300, camp_16: 8100, camp_18: 12400, camp_22: 6200, camp_25: 5150 },
+            { date: '2021-09', camp_14: 15500, camp_15: 10350, camp_16: 8250, camp_18: 12500, camp_22: 6250, camp_25: 5200 },
+            { date: '2021-12', camp_14: 15600, camp_15: 10400, camp_16: 8300, camp_18: 12600, camp_22: 6300, camp_25: 5250 },
+            { date: '2022-03', camp_14: 15700, camp_15: 10450, camp_16: 8350, camp_18: 12700, camp_22: 6350, camp_25: 5300 }
+        ];
+        
+        const campInfo = {
+            camp_14: { name: '개천 관리소 (14호)', color: '#E69F00' },
+            camp_15: { name: '요덕 관리소 (15호)', color: '#56B4E9' },
+            camp_16: { name: '화성 관리소 (16호)', color: '#009E73' },
+            camp_18: { name: '북창 관리소 (18호)', color: '#F0E442' },
+            camp_22: { name: '회령 관리소 (22호)', color: '#0072B2' },
+            camp_25: { name: '청진 관리소 (25호)', color: '#D55E00' }
+        };
+
+        function BarChart() {
+            const [selectedDate, setSelectedDate] = React.useState('2022-03');
+            const [sortBy, setSortBy] = React.useState('value'); // 'value', 'name', 'none'
+            const [sortOrder, setSortOrder] = React.useState('desc'); // 'asc', 'desc'
+            const [animationEnabled, setAnimationEnabled] = React.useState(true);
+            const [showValues, setShowValues] = React.useState(true);
+            
+            const createBarChart = () => {
+                const chartWidth = 800;
+                const chartHeight = 400;
+                const padding = 80;
+                
+                const selectedData = campData.find(item => item.date === selectedDate);
+                if (!selectedData) return null;
+                
+                // 데이터 정렬
+                let barData = Object.entries(campInfo).map(([key, info]) => ({
+                    key,
+                    name: info.name,
+                    value: selectedData[key],
+                    color: info.color
+                }));
+                
+                if (sortBy === 'value') {
+                    barData.sort((a, b) => sortOrder === 'desc' ? b.value - a.value : a.value - b.value);
+                } else if (sortBy === 'name') {
+                    barData.sort((a, b) => sortOrder === 'desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name));
+                }
+                
+                const maxValue = Math.max(...barData.map(d => d.value)) * 1.1;
+                const barWidth = (chartWidth - 2 * padding) / barData.length * 0.8;
+                const barSpacing = (chartWidth - 2 * padding) / barData.length * 0.2;
+                
+                const bars = barData.map((item, index) => {
+                    const x = padding + index * (barWidth + barSpacing) + barSpacing / 2;
+                    const barHeight = (item.value / maxValue) * (chartHeight - 2 * padding);
+                    const y = chartHeight - padding - barHeight;
+                    
+                    return React.createElement('g', { key: item.key }, [
+                        // 바 그라데이션 정의
+                        React.createElement('defs', { key: 'defs' }, [
+                            React.createElement('linearGradient', {
+                                key: `bar-gradient-${item.key}`,
+                                id: `bar-gradient-${item.key}`,
+                                x1: '0%', y1: '0%', x2: '0%', y2: '100%'
+                            }, [
+                                React.createElement('stop', {
+                                    key: 'stop1',
+                                    offset: '0%',
+                                    stopColor: item.color,
+                                    stopOpacity: '1'
+                                }),
+                                React.createElement('stop', {
+                                    key: 'stop2',
+                                    offset: '100%',
+                                    stopColor: item.color,
+                                    stopOpacity: '0.7'
+                                })
+                            ])
+                        ]),
+                        
+                        // 바 배경 (3D 효과)
+                        React.createElement('rect', {
+                            key: 'shadow',
+                            x: x + 3,
+                            y: y + 3,
+                            width: barWidth,
+                            height: barHeight,
+                            fill: 'rgba(0,0,0,0.2)',
+                            rx: 4,
+                            ry: 4
+                        }),
+                        
+                        // 메인 바
+                        React.createElement('rect', {
+                            key: 'bar',
+                            x: x,
+                            y: animationEnabled ? chartHeight - padding : y,
+                            width: barWidth,
+                            height: animationEnabled ? 0 : barHeight,
+                            fill: `url(#bar-gradient-${item.key})`,
+                            rx: 4,
+                            ry: 4,
+                            stroke: theme === 'dark' ? '#fff' : '#333',
+                            strokeWidth: 1,
+                            style: animationEnabled ? {
+                                animation: `growBar 1s ease-out ${index * 0.1}s forwards`
+                            } : {}
+                        }),
+                        
+                        // 호버 효과
+                        React.createElement('rect', {
+                            key: 'hover',
+                            x: x,
+                            y: y,
+                            width: barWidth,
+                            height: barHeight,
+                            fill: 'transparent',
+                            style: { cursor: 'pointer' },
+                            onMouseEnter: (e) => {
+                                e.target.previousSibling.style.filter = 'brightness(1.1)';
+                            },
+                            onMouseLeave: (e) => {
+                                e.target.previousSibling.style.filter = 'brightness(1)';
+                            }
+                        }),
+                        
+                        React.createElement('title', {
+                            key: 'title'
+                        }, `${item.name}: ${item.value.toLocaleString()}명`),
+                        
+                        // 값 레이블
+                        showValues && React.createElement('text', {
+                            key: 'value-label',
+                            x: x + barWidth / 2,
+                            y: y - 5,
+                            textAnchor: 'middle',
+                            fontSize: '11',
+                            fill: theme === 'dark' ? '#ffffff' : '#333333',
+                            fontWeight: 'bold',
+                            style: animationEnabled ? {
+                                opacity: 0,
+                                animation: `fadeIn 0.5s ease-out ${index * 0.1 + 0.5}s forwards`
+                            } : {}
+                        }, item.value.toLocaleString()),
+                        
+                        // 캠프 이름 레이블
+                        React.createElement('text', {
+                            key: 'name-label',
+                            x: x + barWidth / 2,
+                            y: chartHeight - padding + 20,
+                            textAnchor: 'middle',
+                            fontSize: '10',
+                            fill: theme === 'dark' ? '#ffffff' : '#666666'
+                        }, item.name.replace(' 관리소', '').replace(/\(\d+호\)/, ''))
+                    ]);
+                });
+                
+                // Y축 격자선과 레이블
+                const ySteps = 5;
+                const gridLines = Array.from({ length: ySteps + 1 }, (_, i) => {
+                    const value = (maxValue / ySteps) * i;
+                    const y = chartHeight - padding - (i / ySteps) * (chartHeight - 2 * padding);
+                    
+                    return React.createElement('g', { key: `y-${i}` }, [
+                        React.createElement('line', {
+                            key: 'line',
+                            x1: padding,
+                            y1: y,
+                            x2: chartWidth - padding,
+                            y2: y,
+                            stroke: theme === 'dark' ? '#333' : '#e0e0e0',
+                            strokeWidth: 1,
+                            strokeDasharray: i === 0 ? 'none' : '3,3'
+                        }),
+                        React.createElement('text', {
+                            key: 'label',
+                            x: padding - 10,
+                            y: y + 4,
+                            textAnchor: 'end',
+                            fontSize: '11',
+                            fill: theme === 'dark' ? '#ffffff' : '#666666'
+                        }, Math.round(value).toLocaleString())
+                    ]);
+                });
+                
+                return React.createElement('div', {
+                    style: { width: '100%', height: '100%', position: 'relative' }
+                }, [
+                    React.createElement('style', {
+                        key: 'animation-styles'
+                    }, `
+                        @keyframes growBar {
+                            from { 
+                                height: 0; 
+                                y: ${chartHeight - padding}px; 
+                            }
+                            to { 
+                                height: var(--final-height); 
+                                y: var(--final-y); 
+                            }
+                        }
+                        @keyframes fadeIn {
+                            to { opacity: 1; }
+                        }
+                    `),
+                    React.createElement('svg', {
+                        key: 'svg',
+                        width: '100%',
+                        height: '100%',
+                        viewBox: `0 0 ${chartWidth} ${chartHeight}`,
+                        style: { maxHeight: '500px' }
+                    }, [
+                        React.createElement('g', { key: 'gridlines' }, gridLines),
+                        React.createElement('g', { key: 'bars' }, bars)
+                    ])
+                ]);
+            };
+            
+            return React.createElement('div', {
+                className: `container ${theme}-theme`,
+                style: { width, height }
+            }, [
+                React.createElement('div', { key: 'title', className: 'title' }, '📊 NK Camp 바 차트'),
+                
+                showControls && React.createElement('div', { key: 'controls', className: 'controls' }, [
+                    React.createElement('div', { key: 'date-group', className: 'control-group' }, [
+                        React.createElement('label', { key: 'date-label' }, '기준 시점:'),
+                        React.createElement('select', {
+                            key: 'date-select',
+                            value: selectedDate,
+                            onChange: (e) => setSelectedDate(e.target.value)
+                        }, campData.map(item => 
+                            React.createElement('option', {
+                                key: item.date,
+                                value: item.date
+                            }, item.date)
+                        ))
+                    ]),
+                    
+                    React.createElement('div', { key: 'sort-group', className: 'control-group' }, [
+                        React.createElement('label', { key: 'sort-label' }, '정렬:'),
+                        React.createElement('select', {
+                            key: 'sort-select',
+                            value: sortBy,
+                            onChange: (e) => setSortBy(e.target.value)
+                        }, [
+                            React.createElement('option', { key: 'none', value: 'none' }, '기본'),
+                            React.createElement('option', { key: 'value', value: 'value' }, '수감 인원'),
+                            React.createElement('option', { key: 'name', value: 'name' }, '캠프명')
+                        ])
+                    ]),
+                    
+                    React.createElement('div', { key: 'order-group', className: 'control-group' }, [
+                        React.createElement('label', { key: 'order-label' }, '순서:'),
+                        React.createElement('select', {
+                            key: 'order-select',
+                            value: sortOrder,
+                            onChange: (e) => setSortOrder(e.target.value)
+                        }, [
+                            React.createElement('option', { key: 'desc', value: 'desc' }, '내림차순'),
+                            React.createElement('option', { key: 'asc', value: 'asc' }, '오름차순')
+                        ])
+                    ]),
+                    
+                    React.createElement('label', { key: 'values', style: { fontSize: '12px', marginLeft: '20px', cursor: 'pointer' } }, [
+                        React.createElement('input', {
+                            key: 'values-input',
+                            type: 'checkbox',
+                            checked: showValues,
+                            onChange: (e) => setShowValues(e.target.checked),
+                            style: { marginRight: '5px' }
+                        }),
+                        '값 표시'
+                    ]),
+                    
+                    React.createElement('label', { key: 'animation', style: { fontSize: '12px', marginLeft: '10px', cursor: 'pointer' } }, [
+                        React.createElement('input', {
+                            key: 'animation-input',
+                            type: 'checkbox',
+                            checked: animationEnabled,
+                            onChange: (e) => setAnimationEnabled(e.target.checked),
+                            style: { marginRight: '5px' }
+                        }),
+                        '애니메이션'
+                    ])
+                ]),
+                
+                React.createElement('div', { key: 'chart', className: 'chart-container' }, createBarChart())
+            ]);
+        }
+        
+        let isRendered = false;
+        let reactRoot = null;
+        
+        function renderApp() {
+            const container = document.getElementById('root');
+            
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                container.innerHTML = '<div class="loading">React 라이브러리 로딩 중...</div>';
+                setTimeout(renderApp, 100);
+                return;
+            }
+            
+            if (isRendered) return;
+            
+            try {
+                if (!reactRoot) {
+                    reactRoot = ReactDOM.createRoot(container);
+                }
+                reactRoot.render(React.createElement(BarChart));
+                isRendered = true;
+                console.log('NK Camp 바 차트 렌더링 완료');
+            } catch (error) {
+                console.error('렌더링 에러:', error);
+                container.innerHTML = '<div style="padding: 20px; color: red;">렌더링 에러: ' + error.message + '</div>';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', renderApp);
+        window.addEventListener('load', () => {
+            if (!isRendered) {
+                setTimeout(renderApp, 100);
+            }
+        });
+    </script>
+</body>
+</html>

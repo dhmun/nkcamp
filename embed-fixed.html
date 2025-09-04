@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp Interactive - Fixed Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #root {
+            width: 100%;
+            height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .light-theme {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --button-bg: #f5f5f5;
+            --button-text: #666;
+        }
+        
+        .dark-theme {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --border-color: #333333;
+            --button-bg: #333333;
+            --button-text: #cccccc;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .camp-button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .camp-button:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+        
+        .controls label {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            margin-left: 15px;
+            cursor: pointer;
+        }
+        
+        .controls input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .chart-container {
+            flex: 1;
+            position: relative;
+            min-height: 300px;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 16px;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fallback-chart {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">NK Camp 차트 초기화 중...</div>
+    </div>
+
+    <!-- 더 안정적인 CDN 사용 -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script>
+        // URL 파라미터 파싱
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') || 'light';
+        const showControls = urlParams.get('controls') !== 'false';
+        const height = urlParams.get('height') || '600px';
+        const width = urlParams.get('width') || '100%';
+        
+        // 샘플 데이터
+        const campData = [
+            { date: '2020-03', camp_14: 15000, camp_15: 10000, camp_16: 8000, camp_18: 12000, camp_22: 6000, camp_25: 5000 },
+            { date: '2020-06', camp_14: 15200, camp_15: 10100, camp_16: 8100, camp_18: 12200, camp_22: 6100, camp_25: 5050 },
+            { date: '2020-09', camp_14: 15100, camp_15: 10050, camp_16: 8050, camp_18: 12100, camp_22: 6050, camp_25: 5025 },
+            { date: '2020-12', camp_14: 15300, camp_15: 10200, camp_16: 8200, camp_18: 12300, camp_22: 6150, camp_25: 5100 },
+            { date: '2021-03', camp_14: 15400, camp_15: 10250, camp_16: 8150, camp_18: 12250, camp_22: 6100, camp_25: 5075 },
+            { date: '2021-06', camp_14: 15350, camp_15: 10300, camp_16: 8100, camp_18: 12400, camp_22: 6200, camp_25: 5150 },
+            { date: '2021-09', camp_14: 15500, camp_15: 10350, camp_16: 8250, camp_18: 12500, camp_22: 6250, camp_25: 5200 },
+            { date: '2021-12', camp_14: 15600, camp_15: 10400, camp_16: 8300, camp_18: 12600, camp_22: 6300, camp_25: 5250 },
+            { date: '2022-03', camp_14: 15700, camp_15: 10450, camp_16: 8350, camp_18: 12700, camp_22: 6350, camp_25: 5300 },
+            { date: '2022-06', camp_14: 15800, camp_15: 10500, camp_16: 8400, camp_18: 12800, camp_22: 6400, camp_25: 5350 }
+        ];
+        
+        const campInfo = {
+            camp_14: { name: '개천 관리소 (14호)', color: '#E69F00' },
+            camp_15: { name: '요덕 관리소 (15호)', color: '#56B4E9' },
+            camp_16: { name: '화성 관리소 (16호)', color: '#009E73' },
+            camp_18: { name: '북창 관리소 (18호)', color: '#F0E442' },
+            camp_22: { name: '회령 관리소 (22호)', color: '#0072B2' },
+            camp_25: { name: '청진 관리소 (25호)', color: '#D55E00' }
+        };
+
+        // 간단한 React 컴포넌트 (Recharts 없이)
+        function NKCampSimple() {
+            const [selectedCamps, setSelectedCamps] = React.useState({
+                camp_14: true, camp_15: true, camp_16: true,
+                camp_18: true, camp_22: true, camp_25: true
+            });
+            const [normalizedMode, setNormalizedMode] = React.useState(false);
+            
+            const toggleCamp = (campKey) => {
+                setSelectedCamps(prev => ({ ...prev, [campKey]: !prev[campKey] }));
+            };
+            
+            // 간단한 SVG 라인 차트 생성
+            const createSimpleChart = () => {
+                const chartWidth = 800;
+                const chartHeight = 400;
+                const padding = 60;
+                
+                // 선택된 캠프들의 데이터만 필터링
+                const activeCamps = Object.keys(campInfo).filter(key => selectedCamps[key]);
+                
+                if (activeCamps.length === 0) {
+                    return React.createElement('div', { 
+                        className: 'fallback-chart' 
+                    }, '표시할 캠프를 선택해주세요');
+                }
+                
+                // 데이터 정규화
+                const processedData = normalizedMode ? 
+                    campData.map(item => {
+                        const processed = { ...item };
+                        activeCamps.forEach(camp => {
+                            if (processed[camp] && campData[0][camp]) {
+                                processed[camp] = Math.round((processed[camp] / campData[0][camp]) * 100);
+                            }
+                        });
+                        return processed;
+                    }) : campData;
+                
+                // Y축 범위 계산
+                const allValues = processedData.flatMap(item => 
+                    activeCamps.map(camp => item[camp]).filter(Boolean)
+                );
+                const minY = Math.min(...allValues);
+                const maxY = Math.max(...allValues);
+                const yRange = maxY - minY;
+                
+                // SVG 라인 생성
+                const lines = activeCamps.map(camp => {
+                    const points = processedData.map((item, index) => {
+                        const x = padding + (index / (processedData.length - 1)) * (chartWidth - 2 * padding);
+                        const y = chartHeight - padding - ((item[camp] - minY) / yRange) * (chartHeight - 2 * padding);
+                        return `${x},${y}`;
+                    }).join(' ');
+                    
+                    return React.createElement('polyline', {
+                        key: camp,
+                        points: points,
+                        fill: 'none',
+                        stroke: campInfo[camp].color,
+                        strokeWidth: 2,
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round'
+                    });
+                });
+                
+                // X축 레이블
+                const xLabels = processedData.map((item, index) => {
+                    const x = padding + (index / (processedData.length - 1)) * (chartWidth - 2 * padding);
+                    return React.createElement('text', {
+                        key: index,
+                        x: x,
+                        y: chartHeight - padding + 20,
+                        textAnchor: 'middle',
+                        fontSize: '11',
+                        fill: theme === 'dark' ? '#ffffff' : '#333333'
+                    }, item.date);
+                });
+                
+                // Y축 레이블
+                const ySteps = 5;
+                const yLabels = Array.from({ length: ySteps + 1 }, (_, i) => {
+                    const value = minY + (yRange * i / ySteps);
+                    const y = chartHeight - padding - (i / ySteps) * (chartHeight - 2 * padding);
+                    return React.createElement('text', {
+                        key: i,
+                        x: padding - 10,
+                        y: y + 4,
+                        textAnchor: 'end',
+                        fontSize: '11',
+                        fill: theme === 'dark' ? '#ffffff' : '#333333'
+                    }, Math.round(value).toLocaleString());
+                });
+                
+                // 격자선
+                const gridLines = Array.from({ length: ySteps + 1 }, (_, i) => {
+                    const y = chartHeight - padding - (i / ySteps) * (chartHeight - 2 * padding);
+                    return React.createElement('line', {
+                        key: `grid-${i}`,
+                        x1: padding,
+                        y1: y,
+                        x2: chartWidth - padding,
+                        y2: y,
+                        stroke: theme === 'dark' ? '#333' : '#e0e0e0',
+                        strokeWidth: 1,
+                        strokeDasharray: '3,3'
+                    });
+                });
+                
+                return React.createElement('svg', {
+                    width: '100%',
+                    height: '100%',
+                    viewBox: `0 0 ${chartWidth} ${chartHeight}`,
+                    style: { maxHeight: '400px' }
+                }, [
+                    React.createElement('g', { key: 'gridlines' }, gridLines),
+                    React.createElement('g', { key: 'lines' }, lines),
+                    React.createElement('g', { key: 'xlabels' }, xLabels),
+                    React.createElement('g', { key: 'ylabels' }, yLabels)
+                ]);
+            };
+            
+            return React.createElement('div', {
+                className: `container ${theme}-theme`,
+                style: { width, height }
+            }, [
+                // 제목
+                React.createElement('div', {
+                    key: 'title',
+                    className: 'title'
+                }, '북한 주요 관리소 수감 인원 추정치 (2020-2022)'),
+                
+                // 컨트롤
+                showControls && React.createElement('div', {
+                    key: 'controls',
+                    className: 'controls'
+                }, [
+                    // 캠프 버튼들
+                    ...Object.entries(campInfo).map(([key, info]) =>
+                        React.createElement('button', {
+                            key: key,
+                            className: 'camp-button',
+                            onClick: () => toggleCamp(key),
+                            style: {
+                                backgroundColor: selectedCamps[key] ? info.color : 'var(--button-bg)',
+                                color: selectedCamps[key] ? 'white' : 'var(--button-text)'
+                            }
+                        }, info.name.replace(' 관리소', ''))
+                    ),
+                    
+                    // 정규화 체크박스
+                    React.createElement('label', {
+                        key: 'normalize'
+                    }, [
+                        React.createElement('input', {
+                            key: 'normalize-input',
+                            type: 'checkbox',
+                            checked: normalizedMode,
+                            onChange: (e) => setNormalizedMode(e.target.checked)
+                        }),
+                        '정규화 (2020-03 = 100)'
+                    ])
+                ]),
+                
+                // 차트
+                React.createElement('div', {
+                    key: 'chart',
+                    className: 'chart-container'
+                }, createSimpleChart())
+            ]);
+        }
+        
+        // 컴포넌트 렌더링
+        let isRendered = false;
+        let reactRoot = null;
+        
+        function renderApp() {
+            const container = document.getElementById('root');
+            
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                container.innerHTML = '<div class="loading">React 라이브러리 로딩 중...</div>';
+                setTimeout(renderApp, 100);
+                return;
+            }
+            
+            if (isRendered) return;
+            
+            try {
+                if (!reactRoot) {
+                    reactRoot = ReactDOM.createRoot(container);
+                }
+                reactRoot.render(React.createElement(NKCampSimple));
+                isRendered = true;
+                console.log('NK Camp 간단 차트 렌더링 완료');
+            } catch (error) {
+                console.error('렌더링 에러:', error);
+                container.innerHTML = '<div style="padding: 20px; color: red;">렌더링 에러: ' + error.message + '</div>';
+            }
+        }
+        
+        // 페이지 로딩 완료 시 렌더링 (한 번만)
+        document.addEventListener('DOMContentLoaded', renderApp);
+        window.addEventListener('load', () => {
+            if (!isRendered) {
+                setTimeout(renderApp, 100);
+            }
+        });
+    </script>
+</body>
+</html>

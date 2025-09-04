@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mixed Chart: NK Camp Population and Growth Rate (2020-2025)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 90vw;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="population-mixed-chart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('population-mixed-chart').getContext('2d');
+
+        const chartData = {
+            labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Total Population',
+                    data: [209000, 211400, 205800, 198900, 189800, 192700],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    yAxisID: 'y-population'
+                },
+                {
+                    type: 'line',
+                    label: 'Growth Rate (%)',
+                    data: [null, 1.15, -2.65, -3.35, -4.57, 1.53],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y-growth'
+                }
+            ]
+        };
+
+        const config = {
+            type: 'bar', // Set default type, but individual datasets override it
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'NK Camp Population and Growth Rate (2020-2025)',
+                        font: {
+                            size: 18
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.dataset.type === 'line') {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    } else {
+                                        label += new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        display: false // Hide default y-axis
+                    },
+                    'y-population': {
+                        type: 'linear',
+                        position: 'left',
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Population'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' }).format(value);
+                            }
+                        }
+                    },
+                    'y-growth': {
+                        type: 'linear',
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false // Only show grid for population axis
+                        },
+                        title: {
+                            display: true,
+                            text: 'Growth Rate (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                           display: true,
+                           text: 'Year'
+                        }
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>

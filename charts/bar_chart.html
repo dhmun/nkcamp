@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Chart: NK Camp Population by Year (2020-2025)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 90vw;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="population-bar-chart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('population-bar-chart').getContext('2d');
+
+        const chartData = {
+            labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+            datasets: [
+                {
+                    label: 'Camp 14',
+                    data: [43000, 43000, 36800, 40200, 39300, 39700],
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                },
+                {
+                    label: 'Camp 15',
+                    data: [55000, 56800, 42900, 38500, 34000, 33600],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                },
+                {
+                    label: 'Camp 16',
+                    data: [24000, 24000, 28700, 15900, 21000, 24100],
+                    backgroundColor: 'rgba(255, 206, 86, 0.5)'
+                },
+                {
+                    label: 'Camp 17',
+                    data: [21000, 20800, 41200, 44000, 39600, 39200],
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                },
+                {
+                    label: 'Camp 18',
+                    data: [26000, 25800, 20200, 21800, 23800, 24200],
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)'
+                },
+                {
+                    label: 'Camp 25',
+                    data: [40000, 41000, 36000, 38500, 32100, 31900],
+                    backgroundColor: 'rgba(255, 159, 64, 0.5)'
+                }
+            ]
+        };
+
+        const config = {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'NK Camp Population by Year (2020-2025)',
+                        font: {
+                            size: 18
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Population'
+                        },
+                        ticks: {
+                             callback: function(value) {
+                                return new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                           display: true,
+                           text: 'Year'
+                        }
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>

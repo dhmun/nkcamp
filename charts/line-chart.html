@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Camp - Line Chart</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        #root { width: 100%; height: 100vh; padding: 20px; }
+        
+        .container {
+            width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color);
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+        }
+        
+        .light-theme { --bg-color: #ffffff; --text-color: #333333; --border-color: #e0e0e0; --button-bg: #f5f5f5; --button-text: #666; }
+        .dark-theme { --bg-color: #1a1a1a; --text-color: #ffffff; --border-color: #333333; --button-bg: #333333; --button-text: #cccccc; }
+        
+        .title { text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        
+        .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
+        
+        .camp-button {
+            padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer;
+            font-size: 11px; font-weight: 500; transition: all 0.2s ease;
+        }
+        .camp-button:hover { opacity: 0.8; transform: translateY(-1px); }
+        
+        .controls label { display: flex; align-items: center; font-size: 12px; margin-left: 15px; cursor: pointer; }
+        .controls input[type="checkbox"] { margin-right: 5px; }
+        
+        .chart-container { flex: 1; position: relative; min-height: 300px; }
+        
+        .loading { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 16px; }
+        .loading::after {
+            content: ''; width: 20px; height: 20px; margin-left: 10px; border: 2px solid #f3f3f3;
+            border-top: 2px solid #007cba; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"><div class="loading">NK Camp 라인 차트 로딩 중...</div></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') || 'light';
+        const showControls = urlParams.get('controls') !== 'false';
+        const height = urlParams.get('height') || '600px';
+        const width = urlParams.get('width') || '100%';
+        
+        const campData = [
+            { date: '2020-03', camp_14: 15000, camp_15: 10000, camp_16: 8000, camp_18: 12000, camp_22: 6000, camp_25: 5000 },
+            { date: '2020-06', camp_14: 15200, camp_15: 10100, camp_16: 8100, camp_18: 12200, camp_22: 6100, camp_25: 5050 },
+            { date: '2020-09', camp_14: 15100, camp_15: 10050, camp_16: 8050, camp_18: 12100, camp_22: 6050, camp_25: 5025 },
+            { date: '2020-12', camp_14: 15300, camp_15: 10200, camp_16: 8200, camp_18: 12300, camp_22: 6150, camp_25: 5100 },
+            { date: '2021-03', camp_14: 15400, camp_15: 10250, camp_16: 8150, camp_18: 12250, camp_22: 6100, camp_25: 5075 },
+            { date: '2021-06', camp_14: 15350, camp_15: 10300, camp_16: 8100, camp_18: 12400, camp_22: 6200, camp_25: 5150 },
+            { date: '2021-09', camp_14: 15500, camp_15: 10350, camp_16: 8250, camp_18: 12500, camp_22: 6250, camp_25: 5200 },
+            { date: '2021-12', camp_14: 15600, camp_15: 10400, camp_16: 8300, camp_18: 12600, camp_22: 6300, camp_25: 5250 },
+            { date: '2022-03', camp_14: 15700, camp_15: 10450, camp_16: 8350, camp_18: 12700, camp_22: 6350, camp_25: 5300 }
+        ];
+        
+        const campInfo = {
+            camp_14: { name: '개천 관리소 (14호)', color: '#E69F00' },
+            camp_15: { name: '요덕 관리소 (15호)', color: '#56B4E9' },
+            camp_16: { name: '화성 관리소 (16호)', color: '#009E73' },
+            camp_18: { name: '북창 관리소 (18호)', color: '#F0E442' },
+            camp_22: { name: '회령 관리소 (22호)', color: '#0072B2' },
+            camp_25: { name: '청진 관리소 (25호)', color: '#D55E00' }
+        };
+
+        function LineChart() {
+            const [selectedCamps, setSelectedCamps] = React.useState({
+                camp_14: true, camp_15: true, camp_16: true, camp_18: true, camp_22: true, camp_25: true
+            });
+            const [normalizedMode, setNormalizedMode] = React.useState(false);
+            const [showGrid, setShowGrid] = React.useState(true);
+            const [animationEnabled, setAnimationEnabled] = React.useState(true);
+            
+            const toggleCamp = (campKey) => {
+                setSelectedCamps(prev => ({ ...prev, [campKey]: !prev[campKey] }));
+            };
+            
+            const createLineChart = () => {
+                const chartWidth = 900;
+                const chartHeight = 400;
+                const padding = 80;
+                
+                const activeCamps = Object.keys(campInfo).filter(key => selectedCamps[key]);
+                if (activeCamps.length === 0) {
+                    return React.createElement('div', { 
+                        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }
+                    }, '📈 표시할 캠프를 선택해주세요');
+                }
+                
+                const processedData = normalizedMode ? 
+                    campData.map(item => {
+                        const processed = { ...item };
+                        activeCamps.forEach(camp => {
+                            if (processed[camp] && campData[0][camp]) {
+                                processed[camp] = Math.round((processed[camp] / campData[0][camp]) * 100);
+                            }
+                        });
+                        return processed;
+                    }) : campData;
+                
+                const allValues = processedData.flatMap(item => activeCamps.map(camp => item[camp]).filter(Boolean));
+                const minY = Math.min(...allValues) * 0.95;
+                const maxY = Math.max(...allValues) * 1.05;
+                const yRange = maxY - minY;
+                
+                // 애니메이션을 위한 path 생성
+                const createPath = (camp, animated = false) => {
+                    const points = processedData.map((item, index) => {
+                        const x = padding + (index / (processedData.length - 1)) * (chartWidth - 2 * padding);
+                        const y = chartHeight - padding - ((item[camp] - minY) / yRange) * (chartHeight - 2 * padding);
+                        return { x, y, value: item[camp] };
+                    });
+                    
+                    let pathD = `M ${points[0].x} ${points[0].y}`;
+                    for (let i = 1; i < points.length; i++) {
+                        // 베지어 곡선으로 부드러운 라인
+                        const prevPoint = points[i - 1];
+                        const currentPoint = points[i];
+                        const controlX = (prevPoint.x + currentPoint.x) / 2;
+                        pathD += ` Q ${controlX} ${prevPoint.y} ${currentPoint.x} ${currentPoint.y}`;
+                    }
+                    
+                    return {
+                        pathD,
+                        points,
+                        color: campInfo[camp].color
+                    };
+                };
+                
+                const lines = activeCamps.map(camp => {
+                    const { pathD, points, color } = createPath(camp);
+                    
+                    return React.createElement('g', { key: camp }, [
+                        // 그라데이션 영역
+                        React.createElement('defs', { key: 'defs' }, [
+                            React.createElement('linearGradient', {
+                                key: `gradient-${camp}`,
+                                id: `gradient-${camp}`,
+                                x1: '0%', y1: '0%', x2: '0%', y2: '100%'
+                            }, [
+                                React.createElement('stop', {
+                                    key: 'stop1',
+                                    offset: '0%',
+                                    stopColor: color,
+                                    stopOpacity: '0.3'
+                                }),
+                                React.createElement('stop', {
+                                    key: 'stop2',
+                                    offset: '100%',
+                                    stopColor: color,
+                                    stopOpacity: '0.1'
+                                })
+                            ])
+                        ]),
+                        
+                        // 영역 채우기 (선택적)
+                        React.createElement('path', {
+                            key: 'area',
+                            d: pathD + ` L ${chartWidth - padding} ${chartHeight - padding} L ${padding} ${chartHeight - padding} Z`,
+                            fill: `url(#gradient-${camp})`,
+                            opacity: 0.3
+                        }),
+                        
+                        // 메인 라인
+                        React.createElement('path', {
+                            key: 'line',
+                            d: pathD,
+                            fill: 'none',
+                            stroke: color,
+                            strokeWidth: 3,
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round',
+                            style: animationEnabled ? {
+                                strokeDasharray: '1000',
+                                strokeDashoffset: '1000',
+                                animation: 'drawLine 2s ease-out forwards'
+                            } : {}
+                        }),
+                        
+                        // 데이터 포인트
+                        ...points.map((point, index) => 
+                            React.createElement('g', { key: `point-${index}` }, [
+                                React.createElement('circle', {
+                                    key: 'circle',
+                                    cx: point.x,
+                                    cy: point.y,
+                                    r: 4,
+                                    fill: color,
+                                    stroke: '#fff',
+                                    strokeWidth: 2,
+                                    style: animationEnabled ? {
+                                        opacity: 0,
+                                        animation: `fadeIn 0.5s ease-out ${index * 0.1}s forwards`
+                                    } : {}
+                                }),
+                                React.createElement('title', {
+                                    key: 'title'
+                                }, `${campInfo[camp].name}: ${point.value.toLocaleString()}명`)
+                            ])
+                        )
+                    ]);
+                });
+                
+                // 격자선
+                const ySteps = 5;
+                const gridLines = showGrid ? Array.from({ length: ySteps + 1 }, (_, i) => {
+                    const y = chartHeight - padding - (i / ySteps) * (chartHeight - 2 * padding);
+                    return React.createElement('line', {
+                        key: `grid-y-${i}`,
+                        x1: padding,
+                        y1: y,
+                        x2: chartWidth - padding,
+                        y2: y,
+                        stroke: theme === 'dark' ? '#333' : '#e0e0e0',
+                        strokeWidth: 1,
+                        strokeDasharray: '3,3'
+                    });
+                }) : [];
+                
+                // X축 격자선
+                const xGridLines = showGrid ? processedData.map((_, index) => {
+                    const x = padding + (index / (processedData.length - 1)) * (chartWidth - 2 * padding);
+                    return React.createElement('line', {
+                        key: `grid-x-${index}`,
+                        x1: x,
+                        y1: padding,
+                        x2: x,
+                        y2: chartHeight - padding,
+                        stroke: theme === 'dark' ? '#333' : '#e0e0e0',
+                        strokeWidth: 1,
+                        strokeDasharray: '3,3',
+                        opacity: 0.5
+                    });
+                }) : [];
+                
+                // Y축 레이블
+                const yLabels = Array.from({ length: ySteps + 1 }, (_, i) => {
+                    const value = minY + (yRange * i / ySteps);
+                    const y = chartHeight - padding - (i / ySteps) * (chartHeight - 2 * padding);
+                    return React.createElement('text', {
+                        key: `ylabel-${i}`,
+                        x: padding - 10,
+                        y: y + 4,
+                        textAnchor: 'end',
+                        fontSize: '12',
+                        fill: theme === 'dark' ? '#ffffff' : '#666666',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }, normalizedMode ? `${Math.round(value)}%` : Math.round(value).toLocaleString());
+                });
+                
+                // X축 레이블
+                const xLabels = processedData.map((item, index) => {
+                    const x = padding + (index / (processedData.length - 1)) * (chartWidth - 2 * padding);
+                    return React.createElement('text', {
+                        key: `xlabel-${index}`,
+                        x: x,
+                        y: chartHeight - padding + 25,
+                        textAnchor: 'middle',
+                        fontSize: '11',
+                        fill: theme === 'dark' ? '#ffffff' : '#666666',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }, item.date);
+                });
+                
+                return React.createElement('div', {
+                    style: { width: '100%', height: '100%', position: 'relative' }
+                }, [
+                    React.createElement('style', {
+                        key: 'animation-styles'
+                    }, `
+                        @keyframes drawLine {
+                            to { stroke-dashoffset: 0; }
+                        }
+                        @keyframes fadeIn {
+                            to { opacity: 1; }
+                        }
+                    `),
+                    React.createElement('svg', {
+                        key: 'svg',
+                        width: '100%',
+                        height: '100%',
+                        viewBox: `0 0 ${chartWidth} ${chartHeight}`,
+                        style: { maxHeight: '500px' }
+                    }, [
+                        React.createElement('g', { key: 'gridlines' }, [...gridLines, ...xGridLines]),
+                        React.createElement('g', { key: 'lines' }, lines),
+                        React.createElement('g', { key: 'xlabels' }, xLabels),
+                        React.createElement('g', { key: 'ylabels' }, yLabels)
+                    ])
+                ]);
+            };
+            
+            return React.createElement('div', {
+                className: `container ${theme}-theme`,
+                style: { width, height }
+            }, [
+                React.createElement('div', { key: 'title', className: 'title' }, '📈 NK Camp 라인 차트'),
+                
+                showControls && React.createElement('div', { key: 'controls', className: 'controls' }, [
+                    ...Object.entries(campInfo).map(([key, info]) =>
+                        React.createElement('button', {
+                            key: key,
+                            className: 'camp-button',
+                            onClick: () => toggleCamp(key),
+                            style: {
+                                backgroundColor: selectedCamps[key] ? info.color : 'var(--button-bg)',
+                                color: selectedCamps[key] ? 'white' : 'var(--button-text)'
+                            }
+                        }, info.name.replace(' 관리소', ''))
+                    ),
+                    
+                    React.createElement('label', { key: 'normalize' }, [
+                        React.createElement('input', {
+                            key: 'normalize-input',
+                            type: 'checkbox',
+                            checked: normalizedMode,
+                            onChange: (e) => setNormalizedMode(e.target.checked)
+                        }),
+                        '정규화'
+                    ]),
+                    
+                    React.createElement('label', { key: 'grid' }, [
+                        React.createElement('input', {
+                            key: 'grid-input',
+                            type: 'checkbox',
+                            checked: showGrid,
+                            onChange: (e) => setShowGrid(e.target.checked)
+                        }),
+                        '격자선'
+                    ]),
+                    
+                    React.createElement('label', { key: 'animation' }, [
+                        React.createElement('input', {
+                            key: 'animation-input',
+                            type: 'checkbox',
+                            checked: animationEnabled,
+                            onChange: (e) => setAnimationEnabled(e.target.checked)
+                        }),
+                        '애니메이션'
+                    ])
+                ]),
+                
+                React.createElement('div', { key: 'chart', className: 'chart-container' }, createLineChart())
+            ]);
+        }
+        
+        let isRendered = false;
+        let reactRoot = null;
+        
+        function renderApp() {
+            const container = document.getElementById('root');
+            
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                container.innerHTML = '<div class="loading">React 라이브러리 로딩 중...</div>';
+                setTimeout(renderApp, 100);
+                return;
+            }
+            
+            if (isRendered) return;
+            
+            try {
+                if (!reactRoot) {
+                    reactRoot = ReactDOM.createRoot(container);
+                }
+                reactRoot.render(React.createElement(LineChart));
+                isRendered = true;
+                console.log('NK Camp 라인 차트 렌더링 완료');
+            } catch (error) {
+                console.error('렌더링 에러:', error);
+                container.innerHTML = '<div style="padding: 20px; color: red;">렌더링 에러: ' + error.message + '</div>';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', renderApp);
+        window.addEventListener('load', () => {
+            if (!isRendered) {
+                setTimeout(renderApp, 100);
+            }
+        });
+    </script>
+</body>
+</html>
