@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>혼합 차트: 북한 관리소 인구 및 증감률 (2020-2025)</title>
+    <title>혼합 차트: 북한 관리소 수감자 및 증감률 (2020-2025)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -34,7 +34,7 @@
             datasets: [
                 {
                     type: 'bar',
-                    label: '총 인구',
+                    label: '총 수감자',
                     data: [209000, 211400, 205800, 198900, 189800, 192700],
                     backgroundColor: 'rgba(54, 162, 235, 0.5)',
                     yAxisID: 'y-population'
@@ -60,7 +60,7 @@
                 plugins: {
                     title: {
                         display: true,
-                        text: '북한 관리소 인구 및 증감률 (2020-2025)',
+                        text: '북한 관리소 수감자 및 증감률 (2020-2025)',
                         font: {
                             size: 18
                         }
