@@ -79,8 +79,9 @@
                                 return label;
                             },
                             footer: function(tooltipItems) {
-                                const total = tooltipItems.reduce((sum, item) => sum + item.parsed, 0);
-                                const percentage = (tooltipItems[0].parsed / total * 100).toFixed(2) + '%';
+                                const total = this.chart.data.datasets[0].data.reduce((sum, value) => sum + value, 0);
+                                const currentValue = tooltipItems[0].parsed;
+                                const percentage = (currentValue / total * 100).toFixed(2) + '%';
                                 return 'Percentage: ' + percentage;
                             }
                         }
